@@ -6,17 +6,28 @@ import {
   Delete,
   Body,
   Param,
+  ValidationPipe,
+  UsePipes,
+  Query,
+  UseFilters,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { Todo } from './todo.entity';
+import { CreateTodoDto, UpdateTodoDto } from './dto/todos-dto';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 @Controller('todos')
+@UseFilters(AllExceptionsFilter)
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
   @Get()
-  findAll(): Promise<Todo[]> {
-    return this.todoService.findAll();
+  findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('isDone') isDone?: boolean,
+  ): Promise<Todo[]> {
+    return this.todoService.findAll(page, limit, isDone);
   }
 
   @Get(':id')
@@ -25,13 +36,18 @@ export class TodoController {
   }
 
   @Post()
-  create(@Body() todo: Partial<Todo>): Promise<Todo> {
-    return this.todoService.create(todo);
+  @UsePipes(new ValidationPipe({ transform: true }))
+  create(@Body() createTodoDto: CreateTodoDto): Promise<Todo> {
+    return this.todoService.create(createTodoDto);
   }
 
   @Put(':id')
-  update(@Param('id') id: number, @Body() todo: Partial<Todo>): Promise<Todo> {
-    return this.todoService.update(id, todo);
+  @UsePipes(new ValidationPipe({ transform: true }))
+  update(
+    @Param('id') id: number,
+    @Body() updateTodoDto: UpdateTodoDto,
+  ): Promise<Todo> {
+    return this.todoService.update(id, updateTodoDto);
   }
 
   @Delete(':id')

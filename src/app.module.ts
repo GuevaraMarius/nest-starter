@@ -6,7 +6,7 @@ import { TodoModule } from './todo/todo.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'postgres',
+      host: 'localhost',
       port: 5432,
       username: 'postgres',
       password: '1234',

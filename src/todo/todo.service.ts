@@ -10,8 +10,20 @@ export class TodoService {
     private todoRepository: Repository<Todo>,
   ) {}
 
-  async findAll(): Promise<Todo[]> {
-    return this.todoRepository.find();
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    isDone?: boolean,
+  ): Promise<Todo[]> {
+    const query = this.todoRepository.createQueryBuilder('todo');
+
+    if (isDone !== undefined) {
+      query.andWhere('todo.isDone = :isDone', { isDone });
+    }
+
+    query.skip((page - 1) * limit).take(limit);
+
+    return query.getMany();
   }
 
   async findOne(id: number): Promise<Todo> {
