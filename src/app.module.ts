@@ -5,12 +5,12 @@ import { TodoModule } from './todo/todo.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: '',
-      database: 'do-roll',
+      type: 'postgres',
+      host: 'postgres',
+      port: 5432,
+      username: 'postgres',
+      password: '1234',
+      database: 'doroll',
       autoLoadEntities: true,
       synchronize: true,
     }),
