@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Todo } from './todo.entity';
@@ -27,20 +32,58 @@ export class TodoService {
   }
 
   async findOne(id: number): Promise<Todo> {
-    return this.todoRepository.findOneBy({ id });
+    const todo = await this.todoRepository.findOneBy({ id });
+    if (!todo) {
+      throw new NotFoundException(`Todo with ID ${id} not found`);
+    }
+    return todo;
   }
 
   async create(todo: Partial<Todo>): Promise<Todo> {
+    const existingTodo = await this.todoRepository.findOneBy({
+      title: todo.title,
+    });
+    if (existingTodo) {
+      throw new ConflictException(
+        `Todo with title '${todo.title}' already exists`,
+      );
+    }
+
     const newTodo = this.todoRepository.create(todo);
-    return this.todoRepository.save(newTodo);
+    try {
+      return await this.todoRepository.save(newTodo);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to create todo');
+    }
   }
 
   async update(id: number, todo: Partial<Todo>): Promise<Todo> {
-    await this.todoRepository.update(id, todo);
-    return this.findOne(id);
+    const existingTodo = await this.findOne(id);
+    if (todo.title) {
+      const conflictingTodo = await this.todoRepository.findOneBy({
+        title: todo.title,
+      });
+      if (conflictingTodo && conflictingTodo.id !== id) {
+        throw new ConflictException(
+          `Todo with title '${todo.title}' already exists`,
+        );
+      }
+    }
+
+    Object.assign(existingTodo, todo);
+    try {
+      return await this.todoRepository.save(existingTodo);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update todo');
+    }
   }
 
   async remove(id: number): Promise<void> {
-    await this.todoRepository.delete(id);
+    const existingTodo = await this.findOne(id);
+    try {
+      await this.todoRepository.remove(existingTodo);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to delete todo');
+    }
   }
 }
