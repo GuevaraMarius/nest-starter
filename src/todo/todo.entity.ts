@@ -13,4 +13,7 @@ export class Todo {
 
   @Column({ default: false })
   isDone: boolean;
+
+  @Column()
+  deadline: Date;
 }
