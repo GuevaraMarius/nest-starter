@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ERole } from '../role.enum';
 
 @Entity()
 export class User {
@@ -27,6 +28,15 @@ export class User {
 
   @Column()
   password: string;
+
+  @Column({ type: 'enum', enum: ERole, default: ERole.USER })
+  role: ERole;
+
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ default: false })
+  isPhoneVerified: boolean;
 
   @OneToMany(() => Todo, (todo) => todo.user)
   todos: Todo[];

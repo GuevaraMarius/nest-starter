@@ -29,6 +29,10 @@ export class UpdateTodoDto {
 
   @ApiProperty()
   @IsNotEmpty()
+  userId: number;
+
+  @ApiProperty()
+  @IsNotEmpty()
   deadline: Date;
 
   @ApiProperty({ required: false, default: false })
