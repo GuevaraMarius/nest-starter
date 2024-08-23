@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Todo } from './todo.entity';
 import { User } from 'src/user/entities/user.entity';
+import { EStatus } from './status.enum';
 
 @Injectable()
 export class TodoService {
@@ -21,12 +22,12 @@ export class TodoService {
   async findAll(
     page: number = 1,
     limit: number = 10,
-    isDone?: boolean,
+    status?: EStatus,
   ): Promise<Todo[]> {
     const query = this.todoRepository.createQueryBuilder('todo');
 
-    if (isDone !== undefined) {
-      query.andWhere('todo.isDone = :isDone', { isDone });
+    if (status !== undefined) {
+      query.andWhere('todo.status = :status', { status });
     }
 
     query.skip((page - 1) * limit).take(limit);
@@ -36,27 +37,28 @@ export class TodoService {
 
   async findUserTodos(
     userId: number,
-    page?: number,
-    limit?: number,
-    isDone?: boolean,
+    page: number = 1,
+    limit: number = 10,
+    status?: EStatus,
   ): Promise<Todo[]> {
     const query = this.todoRepository
       .createQueryBuilder('todo')
       .where('todo.user.id = :userId', { userId });
 
-    if (isDone !== undefined) {
-      query.andWhere('todo.isDone = :isDone', { isDone });
+    if (status !== undefined) {
+      query.andWhere('todo.status = :status', { status });
     }
 
-    if (page && limit) {
-      query.skip((page - 1) * limit).take(limit);
-    }
+    query.skip((page - 1) * limit).take(limit);
 
     return await query.getMany();
   }
 
   async findOne(id: number): Promise<Todo> {
-    const todo = await this.todoRepository.findOne({ where: { id } });
+    const todo = await this.todoRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
     if (!todo) {
       throw new NotFoundException(`Todo with ID ${id} not found`);
     }
@@ -86,7 +88,6 @@ export class TodoService {
     try {
       return await this.todoRepository.save(newTodo);
     } catch (error) {
-      console.error(error);
       throw new InternalServerErrorException('Failed to create todo');
     }
   }
@@ -94,9 +95,13 @@ export class TodoService {
   async update(id: number, todo: Partial<Todo>, userId: number): Promise<Todo> {
     const existingTodo = await this.findOne(id);
 
-    // Ensure the user owns the todo
     if (existingTodo.user.id !== userId) {
       throw new ConflictException('You can only update your own todos');
+    }
+
+    // Ensure status is updated
+    if (todo.status) {
+      existingTodo.status = todo.status;
     }
 
     Object.assign(existingTodo, todo);
@@ -111,7 +116,6 @@ export class TodoService {
   async remove(id: number, userId: number): Promise<void> {
     const existingTodo = await this.findOne(id);
 
-    // Ensure the user owns the todo
     if (existingTodo.user.id !== userId) {
       throw new ConflictException('You can only delete your own todos');
     }

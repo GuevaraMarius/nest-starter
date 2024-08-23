@@ -1,4 +1,8 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,6 +30,9 @@ export class AuthService {
   async login(user: any) {
     const payload = { username: user.username, sub: user.id, role: user.role };
     return {
+      statusCode: 200,
+      status: 'success',
+      message: 'Logged in succesfully',
       access_token: this.jwtService.sign(payload),
     };
   }
@@ -49,5 +56,32 @@ export class AuthService {
 
   async sendVerificationEmail() {
     // Implement SendGrid email logic here
+  }
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // const resetToken = this.jwtService.sign({ email }, { expiresIn: '1h' });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const decoded = this.jwtService.verify(token);
+    const user = await this.userRepository.findOne({
+      where: { email: decoded.email },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    user.password = hashedPassword;
+    await this.userRepository.save(user);
+  }
+
+  async logout(): Promise<void> {
+    // You can implement this by invalidating the JWT token or setting an expiry time
+    // This can also be done client-side by clearing the token from storage
   }
 }
