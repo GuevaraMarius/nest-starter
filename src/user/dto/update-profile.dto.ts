@@ -1,41 +1,23 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsPhoneNumber,
-  Matches,
-  MinLength,
-} from 'class-validator';
+import { IsOptional, IsString, IsEmail } from 'class-validator';
 
 export class UpdateProfileDto {
-  @Expose()
-  @ApiProperty()
-  @IsNotEmpty()
-  firstName: string;
+  @IsOptional()
+  @IsString()
+  firstName?: string;
 
-  @Expose()
-  @ApiProperty()
-  @IsNotEmpty()
-  lastName: string;
+  @IsOptional()
+  @IsString()
+  lastName?: string;
 
-  @Expose()
-  @ApiProperty()
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
-  @Expose()
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsPhoneNumber('RW')
-  phone: string;
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
-  @ApiProperty()
-  @IsNotEmpty()
-  @MinLength(8)
-  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'password too weak',
-  })
-  password: string;
+  @IsOptional()
+  @IsString()
+  password?: string;
 }
