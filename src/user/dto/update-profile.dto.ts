@@ -8,7 +8,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class SignupDto {
+export class UpdateProfileDto {
   @Expose()
   @ApiProperty()
   @IsNotEmpty()
