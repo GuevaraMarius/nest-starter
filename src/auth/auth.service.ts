@@ -2,12 +2,16 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
+import { v4 as uuidv4 } from 'uuid';
+import { ResetToken } from './entities/reset-token.entity';
+import { EmailService } from 'src/services/email.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +19,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(ResetToken)
+    private readonly resetTokenRepository: Repository<ResetToken>,
+    private readonly emailService: EmailService,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -51,37 +58,104 @@ export class AuthService {
       ...userDto,
       password: hashedPassword,
     });
-    return await this.userRepository.save(newUser);
+    // Ensure this returns a single User object
+    const savedUser = (await this.userRepository.save(
+      newUser,
+    )) as unknown as User;
+
+    // Save ResetToken after registering the user
+    await this.saveResetToken(savedUser.id);
+
+    const activationToken = uuidv4(); // Generate a unique activation token
+    const activationUrl = `${process.env.FRONTEND_URL}/auth/verify-email?token=${activationToken}`;
+
+    await this.emailService.sendEmail(
+      userDto.email,
+      'Account Activation',
+      `Please activate your account by clicking the following link: ${activationUrl}`,
+      `<p>Please activate your account by clicking the following link: <a href="${activationUrl}">Activate Account</a></p>`,
+    );
+
+    return savedUser;
   }
 
-  async sendVerificationEmail() {
-    // Implement SendGrid email logic here
+  async saveResetToken(userId: number): Promise<ResetToken> {
+    const token = uuidv4();
+
+    const resetToken = this.resetTokenRepository.create({
+      userId,
+      token,
+      expiresAt: new Date(Date.now() + 3600000),
+    });
+
+    return await this.resetTokenRepository.save(resetToken);
   }
+  async verifyEmail(token: string): Promise<void> {
+    const resetToken = await this.resetTokenRepository.findOne({
+      where: { token },
+    });
+
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: resetToken.userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.isEmailVerified = true;
+    await this.userRepository.save(user);
+
+    // Delete all tokens associated with this user
+    await this.resetTokenRepository.delete({ userId: user.id });
+  }
+
   async forgotPassword(email: string): Promise<void> {
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // const resetToken = this.jwtService.sign({ email }, { expiresIn: '1h' });
+    const token = uuidv4();
+    const resetToken = this.resetTokenRepository.create({
+      userId: user.id,
+      token,
+      expiresAt: new Date(Date.now() + 3600000), // Token expires in 1 hour
+    });
+    await this.resetTokenRepository.save(resetToken);
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    await this.emailService.sendEmail(
+      email,
+      'Password Reset Request',
+      `Please use the following link to reset your password: ${resetUrl}`,
+      `<p>Please use the following link to reset your password:</p><a href="${resetUrl}">${resetUrl}</a>`,
+    );
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const decoded = this.jwtService.verify(token);
+    const resetToken = await this.resetTokenRepository.findOne({
+      where: { token },
+    });
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
     const user = await this.userRepository.findOne({
-      where: { email: decoded.email },
+      where: { id: resetToken.userId },
     });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const hashedPassword = bcrypt.hashSync(newPassword, 10);
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await this.userRepository.save(user);
+
+    await this.resetTokenRepository.delete({ token });
   }
 
-  async logout(): Promise<void> {
-    // You can implement this by invalidating the JWT token or setting an expiry time
-    // This can also be done client-side by clearing the token from storage
-  }
+  async logout(): Promise<void> {}
 }
