@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsNotEmpty, MinDate } from 'class-validator';
 import { EStatus } from '../status.enum';
 import { Type } from 'class-transformer';
-
+import dayjs from 'dayjs';
 export class CreateTodoDto {
   @ApiProperty()
   @IsNotEmpty()
@@ -15,12 +15,13 @@ export class CreateTodoDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsDate()
-  @MinDate(new Date(), { message: 'Deadline must be a future date' })
+  @MinDate(dayjs().startOf('day').toDate(), {
+    message: 'Deadline must be today or a future date',
+  })
   @Type(() => Date)
   deadline: Date;
 
   @ApiProperty({ default: EStatus.PENDING })
-  @IsNotEmpty()
   status: EStatus;
 }
 
@@ -34,7 +35,9 @@ export class UpdateTodoDto {
   description?: string;
 
   @IsDate()
-  @MinDate(new Date(), { message: 'Deadline must be a future date' })
+  @MinDate(dayjs().startOf('day').toDate(), {
+    message: 'Deadline must be today or a future date',
+  })
   @Type(() => Date)
   deadline?: Date;
 

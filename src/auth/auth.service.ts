@@ -66,8 +66,8 @@ export class AuthService {
     // Save ResetToken after registering the user
     await this.saveResetToken(savedUser.id);
 
-    const activationToken = uuidv4(); // Generate a unique activation token
-    const activationUrl = `${process.env.FRONTEND_URL}/auth/verify-email?token=${activationToken}`;
+    const activationToken = uuidv4();
+    const activationUrl = `http://localhost:8000/auth/verify-email?token=${activationToken}`;
 
     await this.emailService.sendEmail(
       userDto.email,
@@ -127,7 +127,7 @@ export class AuthService {
     });
     await this.resetTokenRepository.save(resetToken);
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset?token=${token}`;
     await this.emailService.sendEmail(
       email,
       'Password Reset Request',

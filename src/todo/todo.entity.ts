@@ -29,6 +29,9 @@ export class Todo {
   @ManyToOne(() => User, (user) => user.todos)
   user: User;
 
+  @Column({ type: 'int' })
+  position: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

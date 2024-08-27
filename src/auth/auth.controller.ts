@@ -12,8 +12,8 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ResponseDto } from 'src/shared/response-dto';
 import { loginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
-import { ResetPasswordDto } from './dto/resetdto';
-import { ForgotPasswordDto } from './dto/forgotDto';
+import { ResetPasswordDto } from './dto/reset.dto';
+import { ForgotPasswordDto } from './dto/forgot.dto';
 
 @ApiTags('Auth')
 @ApiBearerAuth()
@@ -62,9 +62,11 @@ export class AuthController {
       if (error instanceof NotFoundException) {
         return new ResponseDto(404, 'error', error.message);
       }
-      return new ResponseDto(500, 'error', 'Failed to process request', error);
+      console.error('Unexpected error during forgot-password:', error);
+      return new ResponseDto(500, 'error', 'Failed to process request');
     }
   }
+
   @Get('verify-email')
   async verifyEmail(@Body() { token }: { token: string }) {
     try {

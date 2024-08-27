@@ -35,7 +35,7 @@ import { PositiveIntPipe } from 'src/common/positive-int.pipe';
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
-  @Get()
+  @Get('todos/all')
   @Roles(ERole.ADMIN)
   async findAll(
     @Query('page') page?: number,
@@ -51,7 +51,7 @@ export class TodoController {
     );
   }
 
-  @Get('')
+  @Get()
   @Roles(ERole.USER)
   async findMyTodos(
     @Req() req: any,

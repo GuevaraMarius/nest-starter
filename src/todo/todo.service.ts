@@ -49,6 +49,9 @@ export class TodoService {
       query.andWhere('todo.status = :status', { status });
     }
 
+    // Add ordering by position
+    query.orderBy('todo.position', 'ASC');
+
     query.skip((page - 1) * limit).take(limit);
 
     return await query.getMany();
@@ -66,30 +69,20 @@ export class TodoService {
   }
 
   async create(todo: Partial<Todo>, userId: number): Promise<Todo> {
-    const existingTodo = await this.todoRepository.findOne({
-      where: { title: todo.title },
-    });
-    if (existingTodo) {
-      throw new ConflictException(
-        `Todo with title '${todo.title}' already exists`,
-      );
-    }
-
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    const maxPosition = await this.todoRepository
+      .createQueryBuilder('todo')
+      .select('MAX(todo.position)', 'max')
+      .where('todo.user.id = :userId', { userId })
+      .getRawOne();
 
     const newTodo = this.todoRepository.create({
       ...todo,
       user,
+      position: (maxPosition?.max || 0) + 1,
     });
 
-    try {
-      return await this.todoRepository.save(newTodo);
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to create todo');
-    }
+    return await this.todoRepository.save(newTodo);
   }
 
   async update(id: number, todo: Partial<Todo>, userId: number): Promise<Todo> {

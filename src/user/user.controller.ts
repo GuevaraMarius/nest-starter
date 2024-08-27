@@ -7,6 +7,8 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
+  NotFoundException,
+  Get,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -33,7 +35,7 @@ export class UserController {
     @Req() req: any,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<ResponseDto<any>> {
-    const userId = req.user.userId; // Retrieve userId from req.user
+    const userId = req.user.userId;
 
     const updatedUser = await this.userService.updateProfile(
       userId,
@@ -52,6 +54,32 @@ export class UserController {
       200,
       'success',
       'Profile updated successfully',
+      result,
+    );
+  }
+  @Get('profile')
+  @Roles(ERole.USER)
+  async getProfile(@Req() req: any): Promise<ResponseDto<any>> {
+    const userId = req.user.userId;
+    const user = await this.userService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const result = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      role: user.role,
+    };
+
+    return new ResponseDto(
+      200,
+      'success',
+      'User profile retrieved successfully',
       result,
     );
   }
