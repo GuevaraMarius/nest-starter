@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsEmail } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEmail,
+  MinLength,
+  Matches,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -18,6 +24,10 @@ export class UpdateProfileDto {
   phone?: string;
 
   @IsOptional()
-  @IsString()
+  @MinLength(8)
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message:
+      'Password too weak: must contain at least one uppercase letter, one lowercase letter, and one number or special character.',
+  })
   password?: string;
 }
