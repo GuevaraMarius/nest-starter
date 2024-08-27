@@ -20,7 +20,6 @@ export class CreateTodoDto {
   deadline: Date;
 
   @ApiProperty({ default: EStatus.PENDING })
-  @IsNotEmpty()
   status: EStatus;
 }
 

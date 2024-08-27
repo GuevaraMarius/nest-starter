@@ -12,8 +12,8 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ResponseDto } from 'src/shared/response-dto';
 import { loginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
-import { ResetPasswordDto } from './dto/resetdto';
-import { ForgotPasswordDto } from './dto/forgotDto';
+import { ResetPasswordDto } from './dto/reset.dto';
+import { ForgotPasswordDto } from './dto/forgot.dto';
 
 @ApiTags('Auth')
 @ApiBearerAuth()
