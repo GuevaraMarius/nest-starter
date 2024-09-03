@@ -38,4 +38,7 @@ export class UserService {
       throw new Error('Failed to update profile');
     }
   }
+  async findById(userId: number): Promise<User | undefined> {
+    return this.userRepository.findOne({ where: { id: userId } });
+  }
 }

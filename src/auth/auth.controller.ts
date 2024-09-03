@@ -62,9 +62,11 @@ export class AuthController {
       if (error instanceof NotFoundException) {
         return new ResponseDto(404, 'error', error.message);
       }
-      return new ResponseDto(500, 'error', 'Failed to process request', error);
+      console.error('Unexpected error during forgot-password:', error);
+      return new ResponseDto(500, 'error', 'Failed to process request');
     }
   }
+
   @Get('verify-email')
   async verifyEmail(@Body() { token }: { token: string }) {
     try {
